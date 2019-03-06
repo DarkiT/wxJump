@@ -142,8 +142,13 @@
                 if (this.handleValid(articleForm)) {
                     article_add(this.articleForm)
                         .then(response => {
-                            this.$message.success(response.data.msg);
-                            this.$router.push('/article_list')
+                            if (response.data.data == 0) {
+                                this.$message.success('文章发布成功');
+                                this.$router.push('/article_list')
+                            } else {
+                                this.$message.error('有'+response.data.data+'个服务器文章没有更新成功,请在外部点击选择需要更新的文章缓存');
+                                this.$router.push('/article_list')
+                            }
                         });
                 }
             },

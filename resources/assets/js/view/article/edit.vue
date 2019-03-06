@@ -141,10 +141,13 @@
                 if(this.handleValid(articleForm)) {
                     article_edit(this.$route.params.id,this.articleForm)
                         .then(response=>{
-                            //响应成功消息
-                            this.$message.success(response.data.msg);
-                            //跳转到文章列表页面
-                            this.$router.push('/article_list')
+                            if (response.data.data == 0) {
+                                this.$message.success('文章发布成功');
+                                this.$router.push('/article_list')
+                            } else {
+                                this.$message.error('有'+response.data.data+'个服务器文章没有更新成功,请在外部点击选择需要更新的文章缓存');
+                                this.$router.push('/article_list')
+                            }
                         })
                 }
             },

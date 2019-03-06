@@ -34,3 +34,7 @@ Route::get('/buySuccess/{id}', 'Home\GoodsController@buySuccess');
 
 Route::get('/{code}', 'Home\GoodsController@show');
 
+
+Route::get('/update/article/{id}',function (){
+   return response()->json(['code'=>0]);
+});

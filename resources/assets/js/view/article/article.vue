@@ -247,7 +247,7 @@
                     }
                 });
                 return result;
-            }
+            },
         }
     }
 </script>

@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Article;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Article;
+use App\Models\ConfigModel;
 use App\Models\Url;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Calculation\Category;
+use QL\QueryList;
 
 class ArticleController extends BaseController
 {
@@ -55,8 +58,36 @@ class ArticleController extends BaseController
         $article['publish_time'] = date('Y-m-d H:i:s'); //发布时间默认当前时间
         $article['author'] = \Illuminate\Support\Facades\Auth::user()->username; //作者默认当前登录人员
         $article['user_id'] = \Illuminate\Support\Facades\Auth::id(); //用户默认当前用户Id
-        $res = Article::create($article);
-        return $this->returnMsg($res);
+        $res = Article::create($article)->id;
+        //发出更新通知
+        $data = $this->sendUpdate($res, 'add');
+        return $data;
+    }
+
+    /**
+     * 发送文章更新通知
+     *
+     * @param $id
+     * @return int
+     */
+    public function sendUpdate($id, $type)
+    {
+        $url = ConfigModel::query()
+            ->with('Childs')
+            ->where('keyword', 'file_cache')
+            ->first()->toArray()['childs'];
+        $countResult = 0;
+        foreach ($url as $value) {
+            $u = $value['value'];
+            $html = QueryList::getInstance()->get($u . '/update/article/' . $id, [
+                'type' => $type
+            ])->getHtml();
+            $result = json_decode($html, true);
+            if (is_null($result)) {
+                ++$countResult;
+            }
+        }
+        return $this->returnData($countResult);
     }
 
     /**
@@ -79,14 +110,14 @@ class ArticleController extends BaseController
         if (isSuperManager()) {
             $query = $query->where('author', \Illuminate\Support\Facades\Auth::user()->username);
         }
-        $data = $this->filter($query,  $request, 'array');
+        $data = $this->filter($query, $request, 'array');
         return response()->json($data);
     }
 
     /**
      * 修改文章
      *
-     * @param  integer                 $id      文章id
+     * @param  integer $id 文章id
      * @param \Illuminate\Http\Request $request 请求体
      *
      * @return \Illuminate\Http\JsonResponse
@@ -116,7 +147,8 @@ class ArticleController extends BaseController
             'template_id' => 'nullable', //模板Id
         ]);
         $res = Article::find($id)->update($filedValue);
-        return $this->returnMsg($res);
+        $data = $this->sendUpdate($id, 'update');
+        return $data;
     }
 
     /**
@@ -158,49 +190,24 @@ class ArticleController extends BaseController
         foreach ($url as $item) {
             if ($item['type'] == 1) {
                 array_push($result, [
-                        'url'=>'http://'.$item['url'].'/2479515/'.$articleId,
-                        'url_type'=>$item['url_type'],
-                    ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/iujln/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/mlj/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/tuil/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/123/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/sdgsdfg/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/kjjhkj/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/abc/'.$articleId,
-                    'url_type'=>$item['url_type'],
-                ]);
-                array_push($result, [
-                    'url'=>'http://'.$item['url'].'/show/'.$articleId,
-                    'url_type'=>$item['url_type'],
+                    'url' => 'http://' . $item['url'] . '/show/' . $articleId,
+                    'url_type' => $item['url_type'],
                 ]);
             }
-            if($item['type'] == 0) {
+            if ($item['type'] == 0) {
                 array_push($result, [
-                    'url'=>'http://'.$item['url'].'/A-url/'.$articleId,
-                    'url_type'=>$item['url_type'],
+                    'url' => 'http://' . $item['url'] . '/A-url/' . $articleId,
+                    'url_type' => $item['url_type'],
                 ]);
             }
         }
         return $this->returnData($result);
+    }
+
+    public function delete($id)
+    {
+        $res = $this->model::destroy($id);
+        $this->sendUpdate($id, 'delete');
+        return $this->returnMsg($res);
     }
 }

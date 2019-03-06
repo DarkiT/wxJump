@@ -131,6 +131,7 @@
                                 if (this.row.size_name == null) {
                                     this.row.size_name = '';
                                 }
+
                                 return createElement('div', {}, [
                                     createElement('p', {}, '订单号:' + this.row.order_num),
                                     createElement('p', {
