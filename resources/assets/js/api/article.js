@@ -69,5 +69,21 @@ export const urlBatchDel = (data) => {
     })
 };
 
+export const notifyUrl = (data)=> {
+    return axios.request({
+        url: '/url/notify',
+        data,
+        method: 'post'
+    })
+};
+
+export const notifyList = ()=> {
+    return axios.request({
+        url: '/url/notifyList',
+        method: 'get'
+    })
+};
+
+
 
 

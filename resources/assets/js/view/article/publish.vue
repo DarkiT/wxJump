@@ -89,10 +89,11 @@
     import {article_add} from '@/api/article';
     import {getList} from '@/api/category';
     import {template_getList} from '@/api/articleTemplate';
+    import loading from '@/mixins/loading'
     import VueUeditorWrap from 'vue-ueditor-wrap';
 
     export default {
-        mixins: [form_page],
+        mixins: [form_page, loading],
         name: "publish",
         data() {
             return {
@@ -111,7 +112,7 @@
                     key: "", //微信密匙
                     right_now: "",//网站立即跳转到指定地址
                     cnzz: "",//文章流量统计
-                    is_encryption: "",//页面加密
+                    is_encryption: 0,//页面加密
                     iframe: "0",//嵌套网页
                     source_check:"1",//来源检测
                     ajax:"",//异步加载文章
@@ -139,17 +140,21 @@
         },
         methods: {
             onSubmit(articleForm) {
+                this.openFullScreenLoading();
                 if (this.handleValid(articleForm)) {
                     article_add(this.articleForm)
                         .then(response => {
                             if (response.data.data == 0) {
                                 this.$message.success('文章发布成功');
-                                this.$router.push('/article_list')
+                                this.$router.push('/article_list');
+                                this.closeFullScreenLoading();
                             } else {
-                                this.$message.error('有'+response.data.data+'个服务器文章没有更新成功,请在外部点击选择需要更新的文章缓存');
-                                this.$router.push('/article_list')
+                                this.closeFullScreenLoading();
+                                this.$message.error('发布失败,请重新发布');
                             }
-                        });
+                        }).catch(()=>{
+                        this.closeFullScreenLoading();
+                    });
                 }
             },
             success(value) {

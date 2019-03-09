@@ -1,7 +1,7 @@
 <template>
     <el-container style="height: 100%;">
         <el-header>
-            <div class="logo">WeChat 推广&nbsp;<span style="font-size: 12px">V1.0</span></div>
+            <div class="logo">WeChat 推广&nbsp;<span style="font-size: 12px">V1.5</span></div>
             <!--<el-switch v-model="isCollapse"></el-switch>-->
             <el-dropdown trigger="hover" style="float: right;color: #fff;" @command="handleCommand">
                 <span class="el-dropdown-link">

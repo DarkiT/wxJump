@@ -39,10 +39,10 @@
     import Extension from './Extension'
     import list_page from "../../mixins/list_page";
     import {article_del} from "@/api/article"
-
+    import loading from '@/mixins/loading'
     export default {
         components: {Table, Add, Edit, Extension},
-        mixins: [list_page],
+        mixins: [list_page, loading],
         data() {
             return {
                 page_name: '文章',
@@ -193,11 +193,14 @@
                     this.handleEdit(row.id);
                 } else if (type == 'delete') {
                     //删除数据
+                    this.openFullScreenLoading();
                     article_del(row.id).then((response) => {
-                        //成功响应动态移除表格项
-                        this.handleDeleteRow(index);
+                        this.closeFullScreenLoading();
+                        this.handleRenderTable();
                         //提示信息
                         this.$message.success(response.data.msg);
+                    }).catch(()=>{
+                        this.closeFullScreenLoading();
                     });
                 } else if (type == 'url'){
                     this.articleId = row.id;

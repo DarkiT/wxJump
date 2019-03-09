@@ -89,8 +89,9 @@
     import {template_getList} from '@/api/articleTemplate';
     import {getList} from '@/api/category';
     import VueUeditorWrap from 'vue-ueditor-wrap';
+    import loading from '@/mixins/loading'
     export default {
-        mixins: [form_page],
+        mixins: [form_page, loading],
         name: "publish",
         data() {
             return {
@@ -138,17 +139,21 @@
         methods:{
             //提交数据
             onSubmit(articleForm) {
+                this.openFullScreenLoading();
                 if(this.handleValid(articleForm)) {
                     article_edit(this.$route.params.id,this.articleForm)
                         .then(response=>{
                             if (response.data.data == 0) {
+                                this.closeFullScreenLoading();
                                 this.$message.success('文章发布成功');
                                 this.$router.push('/article_list')
                             } else {
-                                this.$message.error('有'+response.data.data+'个服务器文章没有更新成功,请在外部点击选择需要更新的文章缓存');
-                                this.$router.push('/article_list')
+                                this.closeFullScreenLoading();
+                                this.$message.error('发布失败,请重新发布');
                             }
-                        })
+                        }).catch(()=>{
+                        this.closeFullScreenLoading();
+                    });
                 }
             },
             success(value){

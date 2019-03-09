@@ -7,8 +7,11 @@ use App\Models\Article;
 use App\Models\ConfigModel;
 use App\Models\Url;
 use App\Models\User;
+use Carbon\Carbon;
+use GuzzleHttp\Exception\ServerException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Calculation\Category;
@@ -59,8 +62,13 @@ class ArticleController extends BaseController
         $article['author'] = \Illuminate\Support\Facades\Auth::user()->username; //作者默认当前登录人员
         $article['user_id'] = \Illuminate\Support\Facades\Auth::id(); //用户默认当前用户Id
         $res = Article::create($article)->id;
-        //发出更新通知
-        $data = $this->sendUpdate($res, 'add');
+        try {
+            //发出更新通知
+            $data = $this->sendUpdate($res, 'add');
+        } catch (ServerException $exception) {
+            Article::query()->where('id', $res)->delete();
+            return response($exception);
+        }
         return $data;
     }
 
@@ -68,6 +76,7 @@ class ArticleController extends BaseController
      * 发送文章更新通知
      *
      * @param $id
+     *
      * @return int
      */
     public function sendUpdate($id, $type)
@@ -117,7 +126,7 @@ class ArticleController extends BaseController
     /**
      * 修改文章
      *
-     * @param  integer $id 文章id
+     * @param  integer                 $id      文章id
      * @param \Illuminate\Http\Request $request 请求体
      *
      * @return \Illuminate\Http\JsonResponse
@@ -147,8 +156,13 @@ class ArticleController extends BaseController
             'template_id' => 'nullable', //模板Id
         ]);
         $res = Article::find($id)->update($filedValue);
-        $data = $this->sendUpdate($id, 'update');
+        try {
+            $data = $this->sendUpdate($id, 'update');
+        } catch (ServerException $exception) {
+            return response($exception->getMessage());
+        }
         return $data;
+
     }
 
     /**
@@ -186,11 +200,14 @@ class ArticleController extends BaseController
             ->take($limit)
             ->get()
             ->toArray();
+        $article = Article::query()->find($articleId);
+        $day = Carbon::parse($article->publish_time)->format('Y/m/d') . '/';
+
         $result = [];
         foreach ($url as $item) {
             if ($item['type'] == 1) {
                 array_push($result, [
-                    'url' => 'http://' . $item['url'] . '/show/' . $articleId,
+                    'url' => 'http://' . $item['url'] . '/storage/' . $day . $articleId . '.html',
                     'url_type' => $item['url_type'],
                 ]);
             }
@@ -206,8 +223,8 @@ class ArticleController extends BaseController
 
     public function delete($id)
     {
-        $res = $this->model::destroy($id);
         $this->sendUpdate($id, 'delete');
+        $res = $this->model::destroy($id);
         return $this->returnMsg($res);
     }
 }
